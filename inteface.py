@@ -14,10 +14,33 @@ class Board:
         for ind in range(2):
             for i in range(4):
                 for y in range(3):
-                    pos = (500 + 55 + 220 * i + 110 * ((y - ind) % 2), 50 + 55 + ind * 550 + 110 * y)
-                    pawn = Pawn(self.game.board_bgr, self.players[ind], pos)
+                    cord = (500 + 55 + 220 * i + 110 * ((y - ind) % 2), 50 + 55 + (ind * 550) + (110 * y))
+
+                    if y + (5 * ind) % 2 == 0:
+                        pos_x = 1 + (2 * i)
+                    else:
+                        pos_x = 2 + (2 * i)
+
+                    pos_y = 1 + y + (ind * 5)
+                    pos = [pos_x, pos_y]
+                    pawn = Pawn(self.game.board_bgr, self.game, self.players[ind], pos, cord)
                     pawns.append(pawn)
             self.players[ind].set_pawns(pawns)
+
+
+
+    def draw_num(self):
+        for num in range(2):
+            for i in range(8):
+                font = pygame.font.Font(None, 25)
+                text = font.render(f'{i + 1}', 1, black)
+                textpos = text.get_rect()
+                if num == 0:
+                    textpos = textpos.move(480, 105 + (110 * i))
+                else:
+                    textpos = textpos.move(550 + (110 * i), 950)
+                self.game.board_bgr.blit(text, textpos)
+
 
     def draw(self):
         surf = self.game.board_bgr
@@ -31,6 +54,13 @@ class Board:
                 space = Space(surf, 110, (500 + 110 * x, 50 + 110 * y), color)
                 space.draw()
         pygame.draw.rect(surf, black, Rect(500, 50, 880, 880), 5)
+        self.draw_num()
+
+        for pawn in self.players[1].get_pawns():
+            if pawn.pos == [2, 6]:
+                pawn.move([1, 5])
+
+
         for player in self.players:
             for i in player.get_pawns():
                 i.draw()
@@ -51,19 +81,40 @@ class Space:
 
 
 class Pawn:
-    def __init__(self, surf, owner, pos):
+    def __init__(self, surf, game, owner, pos, cord):
         self.owner = owner
         self.pos = pos
+        self.cords = cord
         self.isactive = True
         self.isqueen = False
         self.surf = surf
+        self.game = game
 
     def draw(self):
-        pygame.draw.circle(self.surf, self.owner.color, self.pos, 40)
-        pygame.draw.circle(self.surf, black, self.pos, 40, 2)
+        pygame.draw.circle(self.surf, self.owner.color, self.cords, 40)
+        pygame.draw.circle(self.surf, black, self.cords, 40, 2)
 
-    def move():
-        pass
+    def move(self, pos):
+        for player in self.game.players:
+            for pawn in player.get_pawns():
+                if pawn.pos == pos:
+                    return 0
+        self.set_cords(pos)
+        self.pos = pos
+
+    def set_cords(self, new_pos):
+        x, y = self.cords
+        if new_pos[0] > self.pos[0]:
+            x_cord = self.cords[0] + 110
+        else:
+            x_cord = self.cords[0] - 110
+        if new_pos[1] > self.pos[1]:
+            y_cord = self.cords[1] + 110
+        else:
+            y_cord = self.cords[1] - 110
+
+        self.cords = [x_cord, y_cord]
+
 
     def is_able_to_capture():
         return False
@@ -95,12 +146,12 @@ class Game:
         self.board_bgr = pygame.Surface(self.screen.get_size())
         self.board_bgr = self.board_bgr.convert()
         self.board_bgr.fill((255, 255, 255))
-        game_players = []
+        self.players = []
         colors = ((94, 74, 54), (139, 121, 102))
         for num, player in enumerate(players):
             new = Player(player, colors[num - 1])
-            game_players.append(new)
-        self.board = Board(self, size, game_players)
+            self.players.append(new)
+        self.board = Board(self, size, self.players)
 
     def run(self):
         while True:
